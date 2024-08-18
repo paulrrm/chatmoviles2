@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, TextInput, TouchableOpacity, Text, StyleSheet } from 'react-native';
-
+import {firebase} from "../fb"
+import { Message } from '../types/Message';
 interface ChatInputProps {
   onSend: (message: string) => void;
   
@@ -18,6 +19,11 @@ const ChatInput: React.FC<ChatInputProps> = ({ onSend }) => {
 
   return (
     <View style={styles.container}>
+        {data ? (
+        <Text style={styles.text}>{JSON.stringify(data, null, 2)}</Text>
+      ) : (
+        <Text style={styles.text}>Cargando datos...</Text>
+      )}
       <TextInput
         style={styles.input}
         value={text}
@@ -30,6 +36,21 @@ const ChatInput: React.FC<ChatInputProps> = ({ onSend }) => {
     </View>
   );
 };
+
+const [data, setData] = useState<Message | null>(null);
+
+useEffect(() => {
+  const databaseRef = firebase.database().ref('/messages/');
+
+  const onValueChange = databaseRef.on('value', (snapshot: { val: () => any; }) => {
+    const value = snapshot.val();
+    setData(value);
+  });
+
+  // Cleanup subscription on unmount
+  return () => databaseRef.off('value', onValueChange);
+}, []);
+
 
 const styles = StyleSheet.create({
   container: {
@@ -48,6 +69,10 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     paddingHorizontal: 15,
     fontSize: 16,
+  },
+  text: {
+    fontSize: 16,
+    color: '#333',
   },
   button: {
     marginLeft: 10,

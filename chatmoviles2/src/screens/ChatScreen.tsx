@@ -1,50 +1,58 @@
 import React, { useState, useEffect } from "react";
-import { View, FlatList, Text, StyleSheet, Pressable, TextInput, TouchableOpacity } from "react-native";
-import {getDatabase, ref, onValue, set, Database} from "firebase/database";
-import ChatInput from "../compotents/ChatInput";
-import { Message } from "../types/Message";
+import { View, FlatList, Text, StyleSheet, TextInput, TouchableOpacity } from "react-native";
+import { getDatabase, ref, onValue, set } from "firebase/database";
 import { initializeApp } from "firebase/app";
-import firebase from '../fb';
+import { Message } from "../types/Message";
+
+// Firebase config
+const firebaseConfig = {
+  apiKey: "AIzaSyBXgtCiu_sW94evdyNFEYTHfVdScctk3Ik",
+  authDomain: "prmtest-708b1.firebaseapp.com",
+  databaseURL: "https://prmtest-708b1-default-rtdb.firebaseio.com",
+  projectId: "prmtest-708b1",
+  storageBucket: "prmtest-708b1.appspot.com",
+  messagingSenderId: "45823036154",
+  appId: "1:45823036154:web:98540ccd88cb7b97d19743"
+};
+
+// Initialize Firebase
+initializeApp(firebaseConfig);
 
 const ChatScreen: React.FC = () => {
-  const firebaseConfig = {
-    
-      apiKey: "AIzaSyBXgtCiu_sW94evdyNFEYTHfVdScctk3Ik",
-      authDomain: "prmtest-708b1.firebaseapp.com",
-      databaseURL: "https://prmtest-708b1-default-rtdb.firebaseio.com",
-      projectId: "prmtest-708b1",
-      storageBucket: "prmtest-708b1.appspot.com",
-      messagingSenderId: "45823036154",
-      appId: "1:45823036154:web:98540ccd88cb7b97d19743"
-    
-  };
-
-  const app = initializeApp(firebaseConfig);
-
   const [messages, setMessages] = useState<Message[]>([]);
-  const [text, settext] = useState('')
+  const [text, setText] = useState('');
 
-  initializeApp(firebaseConfig);
-  function envioDatos(menssa:string){
-    let mensaje:Message = {
-      id: new Date().getUTCDate().toString(),
-      text:menssa,
-      timestamp:Number(new Date()[Symbol.toPrimitive]('number'))
+  useEffect(() => {
+    const db = getDatabase();
+    const messagesRef = ref(db, 'messages');
+     // Listen for changes in the "messages" reference
+    const unsubscribe = onValue(messagesRef, (snapshot) => {
+      const data = snapshot.val();
+      if (data) {
+        const loadedMessages: Message[] = Object.keys(data).map((key) => data[key]);
+        // Sort messages by timestamp in descending order
+        loadedMessages.sort((a, b) => b.timestamp - a.timestamp);
+        setMessages(loadedMessages);
+      }
+    });
 
-    }
-    const db=getDatabase();
-    const reference=ref(db,'messages/'+mensaje.id);
-    set(reference,{
-      
-      id: mensaje.id,
-      text: mensaje.text,
-      timestamp: mensaje.timestamp
-    })
+    return () => {
+      unsubscribe();
+    };
+  }, []);
+
+  const envioDatos = (mensajeTexto: string) => {
+    const db = getDatabase();
+    const newMessageRef = ref(db, `messages/${Date.now()}`);
+    const mensaje: Message = {
+      id: newMessageRef.key || Date.now().toString(),
+      text: mensajeTexto,
+      timestamp: Date.now(),
+    };
+
+    set(newMessageRef, mensaje);
+    setText('');
   };
-  
-
-
-  
 
   return (
     <View style={styles.container}>
@@ -61,16 +69,17 @@ const ChatScreen: React.FC = () => {
         )}
         inverted
       />
-     <TextInput
-        style={styles.input}
-        value={text}
-        onChangeText={settext}
-        placeholder="Escribe un mensaje..."
-      />
-      <TouchableOpacity style={styles.button} onPress={()=> envioDatos(text)}>
-        <Text style={styles.buttonText}>Enviar</Text>
-      </TouchableOpacity>
-    
+      <View style={styles.inputContainer}>
+        <TextInput
+          style={styles.input}
+          value={text}
+          onChangeText={setText}
+          placeholder="Escribe un mensaje..."
+        />
+        <TouchableOpacity style={styles.button} onPress={() => envioDatos(text)}>
+          <Text style={styles.buttonText}>Enviar</Text>
+        </TouchableOpacity>
+      </View>
     </View>
   );
 };
@@ -98,6 +107,11 @@ const styles = StyleSheet.create({
     color: "#999",
     marginTop: 5,
   },
+  inputContainer: {
+    flexDirection: 'row',
+    padding: 10,
+    backgroundColor: '#fff',
+  },
   input: {
     flex: 1,
     height: 40,
@@ -113,6 +127,7 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     paddingHorizontal: 15,
     borderRadius: 20,
+    justifyContent: 'center',
   },
   buttonText: {
     color: '#fff',
