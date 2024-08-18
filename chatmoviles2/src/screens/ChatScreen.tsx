@@ -24,7 +24,7 @@ const ChatScreen: React.FC = () => {
 
   useEffect(() => {
     const db = getDatabase();
-    const messagesRef = ref(db, 'messages');
+    const messagesRef = ref(db, 'Mensajes');
      // Listen for changes in the "messages" reference
     const unsubscribe = onValue(messagesRef, (snapshot) => {
       const data = snapshot.val();
@@ -43,9 +43,9 @@ const ChatScreen: React.FC = () => {
 
   const envioDatos = (mensajeTexto: string) => {
     const db = getDatabase();
-    const newMessageRef = ref(db, `messages/${Date.now()}`);
+    const newMessageRef = ref(db, `Mensajes/${Date.now()}`);
     const mensaje: Message = {
-      id: newMessageRef.key || Date.now().toString(),
+     
       text: mensajeTexto,
       timestamp: Date.now(),
     };
@@ -58,7 +58,7 @@ const ChatScreen: React.FC = () => {
     <View style={styles.container}>
       <FlatList
         data={messages}
-        keyExtractor={(item) => item.id}
+        keyExtractor={(item) => item.timestamp.toString()}
         renderItem={({ item }) => (
           <View style={styles.messageContainer}>
             <Text style={styles.messageText}>{item.text}</Text>
